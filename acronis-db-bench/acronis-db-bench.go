@@ -3,8 +3,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
 	"runtime"
 	"sort"
 	"strings"
@@ -99,6 +102,22 @@ func Main() {
 	fmt.Printf(header) //nolint:staticcheck
 
 	printVersion()
+
+	// trap Ctrl+C and call cancel on the context
+	var ctx, cancel = context.WithCancel(context.Background())
+	var c = make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	defer func() {
+		signal.Stop(c)
+		cancel()
+	}()
+	go func() {
+		select {
+		case <-c:
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
 
 	b := benchmark.New()
 
