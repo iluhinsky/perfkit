@@ -3,6 +3,12 @@ package sql
 import (
 	"context"
 	"fmt"
+	"github.com/acronis/perfkit/db/sql/cassandra"
+	"github.com/acronis/perfkit/db/sql/clickhouse"
+	"github.com/acronis/perfkit/db/sql/mssql"
+	"github.com/acronis/perfkit/db/sql/mysql"
+	"github.com/acronis/perfkit/db/sql/postgres"
+	"github.com/acronis/perfkit/db/sql/sqlite"
 	"testing"
 	"time"
 
@@ -160,36 +166,36 @@ func dbDialect(connString string) (dialect, error) {
 
 	switch scheme {
 	case "sqlite":
-		return &sqliteDialect{}, nil
+		return &sqlite.sqliteDialect{}, nil
 	case "mysql":
-		return &mysqlDialect{}, nil
+		return &mysql.mysqlDialect{}, nil
 	case "pg", "postgres", "postgresql":
-		if _, schemaName, err := postgresSchemaAndConnString(connString); err != nil {
+		if _, schemaName, err := postgres.postgresSchemaAndConnString(connString); err != nil {
 			return nil, fmt.Errorf("db: postgres: %v", err)
 		} else {
-			return &pgDialect{schemaName: schemaName}, nil
+			return &postgres.pgDialect{schemaName: schemaName}, nil
 		}
 	case "mssql", "sqlserver":
-		return &msDialect{}, nil
+		return &mssql.msDialect{}, nil
 	case "cql":
 		var cassandraConfig *gocql.ClusterConfig
 		if cassandraConfig, err = cql.ConfigStringToClusterConfig(connString); err != nil {
-			return nil, fmt.Errorf("db: cannot convert cassandra dsn: %s: err: %v", sanitizeConn(connString), err)
+			return nil, fmt.Errorf("db: cannot convert cassandra dsn: %s: err: %v", SanitizeConn(connString), err)
 		}
 
-		return &cassandraDialect{keySpace: cassandraConfig.Keyspace}, nil
+		return &cassandra.cassandraDialect{keySpace: cassandraConfig.Keyspace}, nil
 	case "clickhouse":
-		return &clickHouseDialect{}, nil
+		return &clickhouse.clickHouseDialect{}, nil
 	default:
 		return nil, fmt.Errorf("db: unsupported backend '%v'", scheme)
 	}
 }
 
 func TestSanitizeConn(t *testing.T) {
-	require.Equal(t, "", sanitizeConn(""))
-	require.Equal(t, "mysql://tcp:3306/perfkit_ci", sanitizeConn("mysql://root:password@tcp:3306/perfkit_ci"))                                                     // example value of a secret
-	require.Equal(t, "root:password@tcp:3306/perfkit_ci", sanitizeConn("root:password@tcp:3306/perfkit_ci"))                                                       // example value of a secret
-	require.Equal(t, "postgresql://postgres:5432/perfkit_ci?sslmode=disable", sanitizeConn("postgresql://root:password@postgres:5432/perfkit_ci?sslmode=disable")) // example value of a secret
-	require.Equal(t, "sqlite://:memory:", sanitizeConn("sqlite://:memory:"))
-	require.Equal(t, "some_random@string", sanitizeConn("some_random@string"))
+	require.Equal(t, "", SanitizeConn(""))
+	require.Equal(t, "mysql://tcp:3306/perfkit_ci", SanitizeConn("mysql://root:password@tcp:3306/perfkit_ci"))                                                     // example value of a secret
+	require.Equal(t, "root:password@tcp:3306/perfkit_ci", SanitizeConn("root:password@tcp:3306/perfkit_ci"))                                                       // example value of a secret
+	require.Equal(t, "postgresql://postgres:5432/perfkit_ci?sslmode=disable", SanitizeConn("postgresql://root:password@postgres:5432/perfkit_ci?sslmode=disable")) // example value of a secret
+	require.Equal(t, "sqlite://:memory:", SanitizeConn("sqlite://:memory:"))
+	require.Equal(t, "some_random@string", SanitizeConn("some_random@string"))
 }

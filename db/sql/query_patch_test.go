@@ -1,6 +1,11 @@
 package sql
 
 import (
+	"github.com/acronis/perfkit/db/sql/cassandra"
+	"github.com/acronis/perfkit/db/sql/mssql"
+	"github.com/acronis/perfkit/db/sql/mysql"
+	"github.com/acronis/perfkit/db/sql/postgres"
+	"github.com/acronis/perfkit/db/sql/sqlite"
 	"testing"
 
 	"github.com/acronis/perfkit/db"
@@ -10,7 +15,7 @@ func TestDefaultCreateQueryPatchFuncWithMySQL(t *testing.T) {
 	var table = "test_table"
 	var query = "CREATE TABLE {table} (id {$bigint_autoinc_pk}, name {$ascii})"
 
-	var dia = &sqlDialect{dia: &mysqlDialect{
+	var dia = &sqlDialect{dia: &mysql.mysqlDialect{
 		sqlEngine: "xpand-allnodes",
 	}}
 
@@ -32,7 +37,7 @@ func TestDefaultCreateQueryPatchFuncWithSQLite(t *testing.T) {
 	var table = "test_table"
 	var query = "CREATE TABLE {table} (id {$bigint_autoinc_pk}, name {$ascii})"
 
-	var dia = &sqlDialect{dia: &sqliteDialect{}}
+	var dia = &sqlDialect{dia: &sqlite.sqliteDialect{}}
 
 	var result, err = db.DefaultCreateQueryPatchFunc(table, query, dia)
 
@@ -52,7 +57,7 @@ func TestDefaultCreateQueryPatchFuncWithPostgres(t *testing.T) {
 	var table = "test_table"
 	var query = "CREATE TABLE {table} (id {$bigint_autoinc_pk}, name {$ascii})"
 
-	var dia = &sqlDialect{dia: &pgDialect{}}
+	var dia = &sqlDialect{dia: &postgres.pgDialect{}}
 
 	var result, err = db.DefaultCreateQueryPatchFunc(table, query, dia)
 
@@ -72,7 +77,7 @@ func TestDefaultCreateQueryPatchFuncWithMSSQL(t *testing.T) {
 	var table = "test_table"
 	var query = "CREATE TABLE {table} (id {$bigint_autoinc_pk}, name {$ascii})"
 
-	var dia = &sqlDialect{dia: &msDialect{}}
+	var dia = &sqlDialect{dia: &mssql.msDialect{}}
 
 	var result, err = db.DefaultCreateQueryPatchFunc(table, query, dia)
 
@@ -92,7 +97,7 @@ func TestDefaultCreateQueryPatchFuncWithCassandra(t *testing.T) {
 	var table = "test_table"
 	var query = "CREATE TABLE {table} (id {$bigint_autoinc_pk}, name {$ascii})"
 
-	var dia = &sqlDialect{dia: &cassandraDialect{}}
+	var dia = &sqlDialect{dia: &cassandra.cassandraDialect{}}
 
 	var result, err = db.DefaultCreateQueryPatchFunc(table, query, dia)
 

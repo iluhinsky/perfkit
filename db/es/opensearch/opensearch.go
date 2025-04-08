@@ -1,4 +1,4 @@
-package es
+package opensearch
 
 import (
 	"bytes"
@@ -16,6 +16,8 @@ import (
 	"github.com/opensearch-project/opensearch-go/v4/plugins/ism"
 
 	"github.com/acronis/perfkit/db"
+	perfkites "github.com/acronis/perfkit/db/es"
+	"github.com/acronis/perfkit/db/es/es8"
 )
 
 // nolint: gochecknoinits // remove init() when we will have a better way to register connectors
@@ -40,8 +42,8 @@ func (c *openSearchConnector) ConnectionPool(cfg db.Config) (db.Database, error)
 	var username, password, cs string
 	var err error
 
-	if s := os.Getenv(magicEsEnvVar); s == "" {
-		username, password, cs, err = elasticCredentialsAndConnString(cfg.ConnString, cfg.TLSEnabled)
+	if s := os.Getenv(es8.magicEsEnvVar); s == "" {
+		username, password, cs, err = es8.elasticCredentialsAndConnString(cfg.ConnString, cfg.TLSEnabled)
 		if err != nil {
 			return nil, fmt.Errorf("db: openSearch: %v", err)
 		}
@@ -100,7 +102,7 @@ func (c *openSearchConnector) ConnectionPool(cfg db.Config) (db.Database, error)
 
 	var rw = &openSearchQuerier{client: openSearchClient}
 	var mig = &openSearchMigrator{client: openSearchClient, ismClient: ismClient}
-	return &esDatabase{
+	return &perfkites.esDatabase{
 		rw:          rw,
 		mig:         mig,
 		dialect:     &openSearchDialect{},
@@ -137,7 +139,7 @@ func (q *openSearchQuerier) close() error {
 	return nil
 }
 
-func (q *openSearchQuerier) insert(ctx context.Context, idxName indexName, query *BulkIndexRequest) (*BulkIndexResult, int, error) {
+func (q *openSearchQuerier) insert(ctx context.Context, idxName es.indexName, query *es.BulkIndexRequest) (*es.BulkIndexResult, int, error) {
 	var resp, err = q.client.Bulk(ctx, opensearchapi.BulkReq{
 		Index: string(idxName),
 		Body:  query.Reader(),
@@ -147,13 +149,13 @@ func (q *openSearchQuerier) insert(ctx context.Context, idxName indexName, query
 		return nil, 0, fmt.Errorf("failed to perform insert: %v", err)
 	}
 
-	return &BulkIndexResult{
+	return &es.BulkIndexResult{
 		Errors:    resp.Errors,
 		TimeTaken: int64(resp.Took),
 	}, 0, nil
 }
 
-func (q *openSearchQuerier) search(ctx context.Context, idxName indexName, request *SearchRequest) ([]map[string]interface{}, error) {
+func (q *openSearchQuerier) search(ctx context.Context, idxName es.indexName, request *es.SearchRequest) ([]map[string]interface{}, error) {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(request); err != nil {
 		return nil, fmt.Errorf("request encode error: %v", err)
@@ -180,7 +182,7 @@ func (q *openSearchQuerier) search(ctx context.Context, idxName indexName, reque
 	return fields, nil
 }
 
-func (q *openSearchQuerier) count(ctx context.Context, idxName indexName, request *CountRequest) (int64, error) {
+func (q *openSearchQuerier) count(ctx context.Context, idxName es.indexName, request *es.CountRequest) (int64, error) {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(request); err != nil {
 		return 0, fmt.Errorf("request encode error: %v", err)
@@ -228,19 +230,19 @@ func (m *openSearchMigrator) checkILMPolicyExists(policyName string) (bool, erro
 	return true, nil
 }
 
-func translateIlMPolicytoISMPolicy(policy indexLifecycleManagementPolicy) ism.PolicyBody {
+func translateIlMPolicytoISMPolicy(policy es.indexLifecycleManagementPolicy) ism.PolicyBody {
 	var states []ism.PolicyState
 	for phase, phaseDef := range policy.Phases {
-		if phase != indexPhaseHot {
+		if phase != es.indexPhaseHot {
 			continue
 		}
 
 		for action, actionDef := range phaseDef.Actions {
-			if action != indexActionRollover {
+			if action != es.indexActionRollover {
 				continue
 			}
 
-			if indexRolloverAction, ok := actionDef.(indexRolloverActionSettings); ok {
+			if indexRolloverAction, ok := actionDef.(es.indexRolloverActionSettings); ok {
 				states = append(states, ism.PolicyState{
 					Name: "rollover",
 					Actions: []ism.PolicyStateAction{
@@ -264,7 +266,7 @@ func translateIlMPolicytoISMPolicy(policy indexLifecycleManagementPolicy) ism.Po
 	}
 }
 
-func (m *openSearchMigrator) initILMPolicy(policyName string, policyDefinition indexLifecycleManagementPolicy) error {
+func (m *openSearchMigrator) initILMPolicy(policyName string, policyDefinition es.indexLifecycleManagementPolicy) error {
 	var _, err = m.ismClient.Policies.Put(context.Background(), ism.PoliciesPutReq{
 		Policy: policyName,
 		Body:   ism.PoliciesPutBody{Policy: translateIlMPolicytoISMPolicy(policyDefinition)},
@@ -289,7 +291,7 @@ func (m *openSearchMigrator) deleteILMPolicy(policyName string) error {
 	return nil
 }
 
-func (m *openSearchMigrator) initComponentTemplate(templateName string, template componentTemplate) error {
+func (m *openSearchMigrator) initComponentTemplate(templateName string, template es.componentTemplate) error {
 	type openSearchIndexSettings struct {
 		NumberOfShards     int    `json:"number_of_shards,omitempty"`
 		NumberOfReplicas   int    `json:"number_of_replicas,omitempty"`
@@ -298,7 +300,7 @@ func (m *openSearchMigrator) initComponentTemplate(templateName string, template
 
 	type openSearchComponentTemplate struct {
 		Settings *openSearchIndexSettings `json:"settings,omitempty"`
-		Mappings *mappings                `json:"mappings,omitempty"`
+		Mappings *es.mappings             `json:"mappings,omitempty"`
 	}
 
 	var openSearchSettings *openSearchIndexSettings

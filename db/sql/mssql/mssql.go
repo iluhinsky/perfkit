@@ -1,8 +1,9 @@
-package sql
+package mssql
 
 import (
 	"database/sql"
 	"fmt"
+	sql2 "github.com/acronis/perfkit/db/sql"
 	"math"
 	"strings"
 	"time"
@@ -210,15 +211,15 @@ func (c *msConnector) ConnectionPool(cfg db.Config) (db.Database, error) {
 	var rwc *sql.DB
 
 	if rwc, err = sql.Open("sqlserver", cfg.ConnString); err != nil {
-		return nil, fmt.Errorf("sql: cannot connect to sql server db at %v, err: %v", sanitizeConn(cfg.ConnString), err)
+		return nil, fmt.Errorf("sql: cannot connect to sql server db at %v, err: %v", sql2.SanitizeConn(cfg.ConnString), err)
 	}
 
 	if err = rwc.Ping(); err != nil {
-		return nil, fmt.Errorf("sql: failed ping sql server db at %v, err: %v", sanitizeConn(cfg.ConnString), err)
+		return nil, fmt.Errorf("sql: failed ping sql server db at %v, err: %v", sql2.SanitizeConn(cfg.ConnString), err)
 	}
 
-	dbo.rw = &sqlQuerier{rwc}
-	dbo.t = &sqlQuerier{rwc}
+	dbo.rw = &sql2.sqlQuerier{rwc}
+	dbo.t = &sql2.sqlQuerier{rwc}
 
 	rwc.SetMaxOpenConns(int(math.Max(1, float64(cfg.MaxOpenConns))))
 

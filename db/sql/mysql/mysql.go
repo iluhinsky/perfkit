@@ -1,9 +1,10 @@
-package sql
+package mysql
 
 import (
 	"bytes"
 	"database/sql"
 	"fmt"
+	sql2 "github.com/acronis/perfkit/db/sql"
 	"math"
 	"strconv"
 	"strings"
@@ -308,15 +309,15 @@ func (c *mysqlConnector) ConnectionPool(cfg db.Config) (db.Database, error) {
 
 	dsn := cs + "?" + "maxAllowedPacket=" + strconv.Itoa(cfg.MaxPacketSize) + "&parseTime=true"
 	if rwc, err = sql.Open("mysql", dsn); err != nil {
-		return nil, fmt.Errorf("db: cannot connect to mysql db at %v, err: %v", sanitizeConn(cfg.ConnString), err)
+		return nil, fmt.Errorf("db: cannot connect to mysql db at %v, err: %v", sql2.SanitizeConn(cfg.ConnString), err)
 	}
 
 	if err = rwc.Ping(); err != nil {
-		return nil, fmt.Errorf("db: failed ping mysql db at %v, err: %v", sanitizeConn(cfg.ConnString), err)
+		return nil, fmt.Errorf("db: failed ping mysql db at %v, err: %v", sql2.SanitizeConn(cfg.ConnString), err)
 	}
 
-	dbo.rw = &sqlQuerier{rwc}
-	dbo.t = &sqlQuerier{rwc}
+	dbo.rw = &sql2.sqlQuerier{rwc}
+	dbo.t = &sql2.sqlQuerier{rwc}
 
 	maxConn := int(math.Max(1, float64(cfg.MaxOpenConns)))
 	maxConnLifetime := cfg.MaxConnLifetime

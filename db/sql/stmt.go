@@ -6,8 +6,8 @@ import (
 	"github.com/acronis/perfkit/db"
 )
 
-// sqlStatement defines the interface for prepared statement operations
-type sqlStatement interface {
+// Statement defines the interface for prepared statement operations
+type Statement interface {
 	// Exec executes a prepared statement with the given arguments.
 	// Returns a Result interface and error.
 	// Usage example:
@@ -22,9 +22,9 @@ type sqlStatement interface {
 	Close() error
 }
 
-// sqlStmt implements the sqlStatement interface by wrapping a *sql.Stmt
-type sqlStmt struct {
-	stmt *sql.Stmt // underlying SQL prepared statement
+// Stmt implements the sqlStatement interface by wrapping a *sql.Stmt
+type Stmt struct {
+	Stmt *sql.Stmt // underlying SQL prepared statement
 }
 
 // Exec executes the prepared statement with the given arguments.
@@ -32,15 +32,15 @@ type sqlStmt struct {
 // Args can be either positional parameters (?, $1, etc.) or named parameters (@Name)
 // depending on the SQL dialect being used.
 // Returns the sql.Result from the underlying statement execution.
-func (s *sqlStmt) Exec(args ...any) (db.Result, error) {
-	return s.stmt.Exec(args...)
+func (s *Stmt) Exec(args ...any) (db.Result, error) {
+	return s.Stmt.Exec(args...)
 }
 
 // Close releases the database resources associated with the prepared statement.
 // Should be called when done with the statement to prevent resource leaks.
 // Implements the sqlStatement interface.
-func (s *sqlStmt) Close() error {
-	return s.stmt.Close()
+func (s *Stmt) Close() error {
+	return s.Stmt.Close()
 }
 
 // Prepare creates a prepared statement for the given query.

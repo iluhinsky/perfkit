@@ -1,10 +1,11 @@
-package sql
+package postgres
 
 import (
 	"context"
 	"database/sql"
 	"errors"
 	"fmt"
+	sql2 "github.com/acronis/perfkit/db/sql"
 	"math"
 	"net/url"
 	"strconv"
@@ -307,15 +308,15 @@ func (c *pgConnector) ConnectionPool(cfg db.Config) (db.Database, error) {
 	}
 
 	if rwc, err = sql.Open("postgres", cs); err != nil {
-		return nil, fmt.Errorf("db: cannot connect to postgresql db at %v, err: %v", sanitizeConn(cfg.ConnString), err)
+		return nil, fmt.Errorf("db: cannot connect to postgresql db at %v, err: %v", sql2.SanitizeConn(cfg.ConnString), err)
 	}
 
 	if err = rwc.Ping(); err != nil {
-		return nil, fmt.Errorf("db: failed ping postgresql db at %v, err: %v\n", sanitizeConn(cfg.ConnString), err)
+		return nil, fmt.Errorf("db: failed ping postgresql db at %v, err: %v\n", sql2.SanitizeConn(cfg.ConnString), err)
 	}
 
-	dbo.rw = &sqlQuerier{rwc}
-	dbo.t = &sqlQuerier{rwc}
+	dbo.rw = &sql2.sqlQuerier{rwc}
+	dbo.t = &sql2.sqlQuerier{rwc}
 
 	maxConn := int(math.Max(1, float64(cfg.MaxOpenConns)))
 	rwc.SetMaxOpenConns(maxConn)

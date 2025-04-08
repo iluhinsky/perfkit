@@ -9,8 +9,14 @@ import (
 	"github.com/acronis/perfkit/acronis-db-bench/engine"
 
 	// List of database drivers
-	_ "github.com/acronis/perfkit/db/es"  // es drivers
-	_ "github.com/acronis/perfkit/db/sql" // sql drivers
+	_ "github.com/acronis/perfkit/db/es/es8"         // elasticsearch 8 driver
+	_ "github.com/acronis/perfkit/db/es/opensearch"  // opensearch driver
+	_ "github.com/acronis/perfkit/db/sql/cassandra"  // cassandra driver
+	_ "github.com/acronis/perfkit/db/sql/clickhouse" // clickhouse driver
+	_ "github.com/acronis/perfkit/db/sql/mssql"      // mssql driver
+	_ "github.com/acronis/perfkit/db/sql/mysql"      // mysql driver
+	_ "github.com/acronis/perfkit/db/sql/postgres"   // postgres driver
+	_ "github.com/acronis/perfkit/db/sql/sqlite"     // sqlite driver
 
 	// List of test groups
 	_ "github.com/acronis/perfkit/acronis-db-bench/test-groups/basic-scenarios"          // basic-scenarios

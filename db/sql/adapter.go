@@ -5,8 +5,8 @@ import (
 	"database/sql"
 )
 
-// sqlQuerier wraps a standard sql.DB connection
-type sqlQuerier struct {
+// Adapter wraps a standard sql.DB connection
+type Adapter struct {
 	be *sql.DB // backend database connection
 }
 
@@ -16,46 +16,46 @@ type sqlTransaction struct {
 }
 
 // ping checks if database connection is alive
-func (d *sqlQuerier) ping(ctx context.Context) error {
+func (d *Adapter) ping(ctx context.Context) error {
 	return d.be.PingContext(ctx)
 }
 
 // stats returns database connection statistics
-func (d *sqlQuerier) stats() sql.DBStats {
+func (d *Adapter) stats() sql.DBStats {
 	return d.be.Stats()
 }
 
 // rawSession returns the underlying database connection
-func (d *sqlQuerier) rawSession() interface{} {
+func (d *Adapter) rawSession() interface{} {
 	return d.be
 }
 
 // close terminates the database connection
-func (d *sqlQuerier) close() error {
+func (d *Adapter) close() error {
 	return d.be.Close()
 }
 
 // execContext executes a SQL query without returning rows
 // Used for INSERT, UPDATE, DELETE operations
-func (d *sqlQuerier) execContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+func (d *Adapter) execContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
 	return d.be.ExecContext(ctx, query, args...)
 }
 
 // queryRowContext executes a query expecting a single row result
 // Typically used for SELECT queries returning one row
-func (d *sqlQuerier) queryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
+func (d *Adapter) queryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
 	return d.be.QueryRowContext(ctx, query, args...)
 }
 
 // queryContext executes a query that can return multiple rows
 // Used for SELECT queries potentially returning multiple results
-func (d *sqlQuerier) queryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+func (d *Adapter) queryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
 	return d.be.QueryContext(ctx, query, args...)
 }
 
 // prepareContext creates a prepared statement for later execution
 // Helps prevent SQL injection and improves performance for repeated queries
-func (d *sqlQuerier) prepareContext(ctx context.Context, query string) (sqlStatement, error) {
+func (d *Adapter) prepareContext(ctx context.Context, query string) (sqlStatement, error) {
 	var stmt, err = d.be.PrepareContext(ctx, query)
 	if err != nil {
 		return nil, err
@@ -65,7 +65,7 @@ func (d *sqlQuerier) prepareContext(ctx context.Context, query string) (sqlState
 }
 
 // begin starts a new database transaction
-func (d *sqlQuerier) begin(ctx context.Context) (transaction, error) {
+func (d *Adapter) begin(ctx context.Context) (transaction, error) {
 	be, err := d.be.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err

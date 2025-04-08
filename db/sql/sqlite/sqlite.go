@@ -42,10 +42,6 @@ func (d *sqliteDialect) encodeVector(vs []float32) string {
 	return ""
 }
 
-func (d *sqliteDialect) encodeOrderByVector(field, operator, vector string) string {
-	return "" // SQLite doesn't support vector search
-}
-
 func (d *sqliteDialect) encodeBool(b bool) string {
 	// borrowed from dbr
 	// https://www.sqlite.org/lang_expr.html

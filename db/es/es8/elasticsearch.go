@@ -1,4 +1,4 @@
-package es
+package es8
 
 import (
 	"bytes"
@@ -18,6 +18,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/esapi"
 
 	"github.com/acronis/perfkit/db"
+	perfkites "github.com/acronis/perfkit/db/es"
 )
 
 const (
@@ -129,7 +130,7 @@ func (c *esConnector) ConnectionPool(cfg db.Config) (db.Database, error) {
 	}
 
 	var rw = &esQuerier{es: es}
-	return &esDatabase{
+	return &es2.esDatabase{
 		rw:          rw,
 		mig:         rw,
 		dialect:     &elasticSearchDialect{},
@@ -166,7 +167,7 @@ func (q *esQuerier) close() error {
 	return nil
 }
 
-func (q *esQuerier) getShardAndNodeInfo(idx indexName) (numNodes int, shards []shardInfo, err error) {
+func (q *esQuerier) getShardAndNodeInfo(idx es2.indexName) (numNodes int, shards []shardInfo, err error) {
 	shards, err = q.shardInfo(idx)
 	if err != nil {
 		return
@@ -175,7 +176,7 @@ func (q *esQuerier) getShardAndNodeInfo(idx indexName) (numNodes int, shards []s
 	return
 }
 
-func (q *esQuerier) expectedSuccesses(idx indexName) int {
+func (q *esQuerier) expectedSuccesses(idx es2.indexName) int {
 	numNodes, shards, err := q.getShardAndNodeInfo(idx)
 	if err != nil {
 		return 0
@@ -216,7 +217,7 @@ func parseShardData(s string) ([]shardInfo, error) {
 	return si, nil
 }
 
-func (q *esQuerier) shardInfo(idx indexName) ([]shardInfo, error) {
+func (q *esQuerier) shardInfo(idx es2.indexName) ([]shardInfo, error) {
 	resp, err := esapi.CatShardsRequest{
 		Index:  []string{string(idx)},
 		Pretty: true,
@@ -257,7 +258,7 @@ func (q *esQuerier) nodeInfo() (int, error) {
 	return parseNodeData(s), nil
 }
 
-func (q *esQuerier) insert(ctx context.Context, idxName indexName, query *BulkIndexRequest) (*BulkIndexResult, int, error) {
+func (q *esQuerier) insert(ctx context.Context, idxName perfkites.indexName, query *perfkites.BulkIndexRequest) (*perfkites.BulkIndexResult, int, error) {
 	var res, err = q.es.Bulk(query.Reader(),
 		q.es.Bulk.WithContext(ctx),
 		q.es.Bulk.WithIndex(string(idxName)),
@@ -268,7 +269,7 @@ func (q *esQuerier) insert(ctx context.Context, idxName indexName, query *BulkIn
 		return nil, 0, fmt.Errorf("bulk insert error %s", res.String())
 	}
 
-	var rv = new(BulkIndexResult)
+	var rv = new(perfkites.BulkIndexResult)
 	if err = json.NewDecoder(res.Body).Decode(rv); err != nil {
 		return nil, 0, fmt.Errorf("error decoding request: %v", err)
 	}
@@ -288,7 +289,7 @@ func (q *esQuerier) insert(ctx context.Context, idxName indexName, query *BulkIn
 	return rv, 0, nil
 }
 
-func (q *esQuerier) search(ctx context.Context, idxName indexName, request *SearchRequest) ([]map[string]interface{}, error) {
+func (q *esQuerier) search(ctx context.Context, idxName es2.indexName, request *es2.SearchRequest) ([]map[string]interface{}, error) {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(request); err != nil {
 		return nil, fmt.Errorf("request encode error: %v", err)
@@ -313,7 +314,7 @@ func (q *esQuerier) search(ctx context.Context, idxName indexName, request *Sear
 		}
 	}
 
-	var resp = SearchResponse{}
+	var resp = perfkites.SearchResponse{}
 	var decoder = json.NewDecoder(res.Body)
 	decoder.UseNumber()
 	if err = decoder.Decode(&resp); err != nil {
@@ -328,7 +329,7 @@ func (q *esQuerier) search(ctx context.Context, idxName indexName, request *Sear
 	return fields, nil
 }
 
-func (q *esQuerier) count(ctx context.Context, idxName indexName, request *CountRequest) (int64, error) {
+func (q *esQuerier) count(ctx context.Context, idxName perfkites.indexName, request *perfkites.CountRequest) (int64, error) {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(request); err != nil {
 		return 0, fmt.Errorf("request encode error: %v", err)
@@ -352,7 +353,7 @@ func (q *esQuerier) count(ctx context.Context, idxName indexName, request *Count
 		return 0, fmt.Errorf("failed to perform count: %s", res.String())
 	}
 
-	var resp = SearchResponse{}
+	var resp = es2.SearchResponse{}
 	var decoder = json.NewDecoder(res.Body)
 	decoder.UseNumber()
 	if err = decoder.Decode(&resp); err != nil {
@@ -387,9 +388,9 @@ func (q *esQuerier) checkILMPolicyExists(policyName string) (bool, error) {
 	return true, nil
 }
 
-func (q *esQuerier) initILMPolicy(policyName string, policyDefinition indexLifecycleManagementPolicy) error {
+func (q *esQuerier) initILMPolicy(policyName string, policyDefinition es2.indexLifecycleManagementPolicy) error {
 	var query = struct {
-		Policy indexLifecycleManagementPolicy `json:"policy"`
+		Policy es2.indexLifecycleManagementPolicy `json:"policy"`
 	}{
 		Policy: policyDefinition,
 	}
@@ -421,9 +422,9 @@ func (q *esQuerier) deleteILMPolicy(policyName string) error {
 	return nil
 }
 
-func (q *esQuerier) initComponentTemplate(templateName string, template componentTemplate) error {
+func (q *esQuerier) initComponentTemplate(templateName string, template es2.componentTemplate) error {
 	var query = struct {
-		Template componentTemplate `json:"template"`
+		Template es2.componentTemplate `json:"template"`
 	}{
 		Template: template,
 	}

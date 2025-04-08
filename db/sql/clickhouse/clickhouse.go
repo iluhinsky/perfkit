@@ -1,8 +1,9 @@
-package sql
+package clickhouse
 
 import (
 	"database/sql"
 	"fmt"
+	sql2 "github.com/acronis/perfkit/db/sql"
 	"math"
 	"strings"
 	"time"
@@ -208,15 +209,15 @@ func (c *clickhouseConnector) ConnectionPool(cfg db.Config) (db.Database, error)
 	var rwc *sql.DB
 
 	if rwc, err = sql.Open("clickhouse", cfg.ConnString); err != nil {
-		return nil, fmt.Errorf("db: cannot connect to clickhouse db at %v, err: %v", sanitizeConn(cfg.ConnString), err)
+		return nil, fmt.Errorf("db: cannot connect to clickhouse db at %v, err: %v", sql2.SanitizeConn(cfg.ConnString), err)
 	}
 
 	if err = rwc.Ping(); err != nil {
-		return nil, fmt.Errorf("db: failed ping clickhouse db at %v, err: %v", sanitizeConn(cfg.ConnString), err)
+		return nil, fmt.Errorf("db: failed ping clickhouse db at %v, err: %v", sql2.SanitizeConn(cfg.ConnString), err)
 	}
 
-	dbo.rw = &sqlQuerier{rwc}
-	dbo.t = &sqlQuerier{rwc}
+	dbo.rw = &sql2.sqlQuerier{rwc}
+	dbo.t = &sql2.sqlQuerier{rwc}
 
 	maxConn := int(math.Max(1, float64(cfg.MaxConnLifetime)))
 	maxConnLifetime := cfg.MaxConnLifetime

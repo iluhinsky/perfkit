@@ -4,6 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/acronis/perfkit/db/sql/mssql"
+	"github.com/acronis/perfkit/db/sql/mysql"
+	"github.com/acronis/perfkit/db/sql/postgres"
+	"github.com/acronis/perfkit/db/sql/sqlite"
 	"math"
 	"strings"
 
@@ -86,13 +90,13 @@ func dialectFromDbrScheme(scheme string) (string, dialect, error) {
 
 	switch parts[0] {
 	case "sqlite":
-		return "sqlite", &sqliteDialect{}, nil
+		return "sqlite", &sqlite.sqliteDialect{}, nil
 	case "mysql":
-		return "mysql", &mysqlDialect{}, nil
+		return "mysql", &mysql.mysqlDialect{}, nil
 	case "postgres":
-		return "postgres", &pgDialect{}, nil
+		return "postgres", &postgres.pgDialect{}, nil
 	case "mssql":
-		return "mssql", &msDialect{}, nil
+		return "mssql", &mssql.msDialect{}, nil
 	default:
 		return "", nil, fmt.Errorf("'%s' is unsupported dialect", parts[0])
 	}
@@ -116,18 +120,18 @@ func (c *dbrConnector) ConnectionPool(cfg db.Config) (db.Database, error) {
 	}
 
 	if dia.name() == db.POSTGRES {
-		cs, dia, err = initializePostgresDB(cfg.ConnString, cfg.SystemLogger)
+		cs, dia, err = postgres.initializePostgresDB(cfg.ConnString, cfg.SystemLogger)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	if rwc, err = dbr.Open(driver, cs, &dbrEventReceiver{queryLogger: cfg.QueryLogger, exitOnError: true, queries: []dbrQuery{}}); err != nil {
-		return nil, fmt.Errorf("db: cannot connect to mysql db at %v, err: %v", sanitizeConn(cfg.ConnString), err)
+		return nil, fmt.Errorf("db: cannot connect to mysql db at %v, err: %v", SanitizeConn(cfg.ConnString), err)
 	}
 
 	if err = rwc.Ping(); err != nil {
-		return nil, fmt.Errorf("db: failed ping mysql db at %v, err: %v", sanitizeConn(cfg.ConnString), err)
+		return nil, fmt.Errorf("db: failed ping mysql db at %v, err: %v", SanitizeConn(cfg.ConnString), err)
 	}
 
 	var sess = rwc.NewSession(nil)
