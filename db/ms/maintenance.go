@@ -85,8 +85,8 @@ func (d *msDatabase) CreateTable(tableName string, tableDefinition *db.TableDefi
 	// Determine primary key from table definition
 	var primaryKey string
 	for _, row := range tableDefinition.TableRows {
-		if row.PrimaryKey {
-			primaryKey = row.Name
+		if row.IsPrimaryKey() {
+			primaryKey = row.GetName()
 			break
 		}
 	}
@@ -123,15 +123,15 @@ func (d *msDatabase) CreateTable(tableName string, tableDefinition *db.TableDefi
 
 	for _, row := range tableDefinition.TableRows {
 		// Vector columns are configured as embedders, not filterable/sortable
-		switch row.Type {
+		switch row.GetType() {
 		case db.DataTypeVector3Float32:
-			embedders[row.Name] = meilisearch.Embedder{
+			embedders[row.GetName()] = meilisearch.Embedder{
 				Source:     meilisearch.UserProvidedEmbedderSource,
 				Dimensions: 3,
 			}
 			continue
 		case db.DataTypeVector768Float32:
-			embedders[row.Name] = meilisearch.Embedder{
+			embedders[row.GetName()] = meilisearch.Embedder{
 				Source:     meilisearch.UserProvidedEmbedderSource,
 				Dimensions: 768,
 			}
@@ -139,14 +139,14 @@ func (d *msDatabase) CreateTable(tableName string, tableDefinition *db.TableDefi
 		}
 
 		// All non-vector columns are made filterable for benchmark flexibility
-		filterableAttrs = append(filterableAttrs, interface{}(row.Name))
+		filterableAttrs = append(filterableAttrs, interface{}(row.GetName()))
 
 		// Numeric and datetime types are sortable (including primary key)
-		switch row.Type {
+		switch row.GetType() {
 		case db.DataTypeId, db.DataTypeInt, db.DataTypeBigInt, db.DataTypeBigIntAutoInc,
 			db.DataTypeSmallInt, db.DataTypeTinyInt, db.DataTypeDateTime, db.DataTypeDateTime6,
 			db.DataTypeTimestamp, db.DataTypeTimestamp6:
-			sortableAttrs = append(sortableAttrs, row.Name)
+			sortableAttrs = append(sortableAttrs, row.GetName())
 		}
 	}
 
